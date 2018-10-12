@@ -1,0 +1,3 @@
+rootProject.name = 'TMI_Front'
+
+include ':app'
