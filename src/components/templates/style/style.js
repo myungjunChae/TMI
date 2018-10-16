@@ -7,3 +7,4 @@ const StyledView = styled.View`
 `;
 
 export { StyledView };
+
