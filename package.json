@@ -2,6 +2,11 @@
   "name": "TMI_Front",
   "version": "0.0.1",
   "private": true,
+  "rnpm": {
+    "assets": [
+      "./assets/fonts"
+    ]
+  },
   "scripts": {
     "start": "node node_modules/react-native/local-cli/cli.js start",
     "test": "jest"
@@ -11,6 +16,7 @@
     "react-native": "0.57.3",
     "react-native-ble-plx": "^1.0.0",
     "react-native-elements": "^1.0.0-beta6",
+    "react-native-modal": "^7.0.0",
     "react-native-vector-icons": "^6.0.2",
     "react-navigation": "^2.18.0",
     "styled-components": "^3.4.10"
