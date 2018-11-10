@@ -53,6 +53,11 @@ class DetectList extends React.Component{
         this.toggleDeviceScan  = this.toggleDeviceScan.bind(this)
     }
 
+    componentDidMount(){
+        console.log("DidMount");
+        console.log(this.props);
+    }
+
     _log = (text, ...args) => {
         this.setState({
           text: [text, ...this.state.text]
@@ -131,36 +136,49 @@ class DetectList extends React.Component{
 
     render() {
         return ( 
-          <View
-            style={styles.container}
-          >
-            <FlatList
-              style={styles.container}
-              data={this.state.deviceList}
-              renderItem={({ item }) => <Text> {item.name} </Text>}
-              keyExtractor={(item) => item.id}
-            />
-            
-            <TouchableNativeFeedback
-            onPress={this.toggleDeviceScan}
-            background={TouchableNativeFeedback.SelectableBackground()}>
-                <View style={{alignSelf: 'stretch', height: 100, backgroundColor: 'red'}}>
-                    <Text style={{margin: 30}}>Button</Text>
-                </View>
-            </TouchableNativeFeedback>
+            <View style={styles.wrapper}>
+                <FlatList
+                    contentContainerStyle={styles.wrapper}
+                    data={[]}
+                    renderItem={({ item }) => 
+                        <View style={styles.listItem}> 
+                            <Text> {item.name} </Text>
+                        </View>
+                    }
+                    keyExtractor={(item) => item.id}
+                />
+                
+                <TouchableNativeFeedback
+                onPress={console.log(this.props)}
+                background={TouchableNativeFeedback.SelectableBackground()}>
+                    <View style={{alignSelf: 'stretch', height: 100, backgroundColor: 'red'}}>
+                        <Text style={{margin: 30}}>Button</Text>
+                    </View>
+                </TouchableNativeFeedback>
 
-          </View>
+            </View>
         );
     }
 }
 
-const StyledFlatList = styled.FlatList.attrs({
-
-});
+const width = '80%';
 
 const styles = StyleSheet.create({
-    container: {
-      flex: 1
+    wrapper: {
+      flex: 1,
+      alignItems: 'center'
+    },
+    listItem:{
+        flex: 1,
+        alignItems: 'center',
+        
+        marginTop: 5,
+        marginBottom: 5,
+
+        width,
+        height : 100,
+        borderWidth: 0.5,
+        borderColor: '#d6d7da',
     }
   });
 
