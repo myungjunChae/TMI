@@ -11,11 +11,19 @@ export default createBottomTabNavigator(
     },
     {
         tabBarOptions: {
-            activeTintColor: '#ff0000',
-            inactiveTintColor: '#ffffff',
-            style:{
-                backgroundColor:'#000000',
-            },
-        },  
+            activeTintColor: 'tomato',
+            inactiveTintColor: 'gray',
+        },
     },
 );
+
+// export default class MainPage extends React.Component{
+//     render() {
+//       return (
+//         <View>
+//           <Text>Welcome to React Native!</Text>
+//           <Text>To get started, edit App.js</Text>
+//         </View>
+//       );
+//     }
+//   }
