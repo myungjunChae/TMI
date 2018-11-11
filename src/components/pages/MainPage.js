@@ -1,12 +1,12 @@
 import React from 'react';
 import {View, Text} from 'react-native';
 import { createBottomTabNavigator } from 'react-navigation';
-import { ItemList, DetectList, Setting } from '../templates'
+import { ItemList, Map, Setting } from '../templates'
 
 export default createBottomTabNavigator(
     {
         ItemList,
-        DetectList,
+        Map,
         Setting,
     },
     {

@@ -4,9 +4,12 @@ import Modal from 'react-native-modal'
 
 import { BleManager } from 'react-native-ble-plx';
 
-let deviceInfoTemplate = {id:'', name:'', state:'', timer:-1}
+import { clone } from '../../function/common'
 
-class ItemList extends React.Component {
+let deviceInfoTemplate = {id: '', name: '', lost_state: 0, lost_location: '', timer: -1}
+const timer = 10;
+
+class ItemList extends React.PureComponent {
     constructor(props) {
         super(props);
         this.state = {
@@ -23,46 +26,112 @@ class ItemList extends React.Component {
             manager: new BleManager()
         };
     
+        this.getUserDevice = this.getUserDevice.bind(this);
         this.startDeviceScan = this.startDeviceScan.bind(this);
     }
 
-    componentDidMount() {
-        //list setting
-        let conf = deviceInfoTemplate;
-        this.setState(prevState => ({
-            detectList: [...prevState.detectList, conf]
-        }));
+    componentWillMount() {
+        this.getUserDevice().then(()=>{
+            //beartBeat on
+            setInterval(()=>{
+                for(let index in this.state.ownList){
+                    if(this.state.ownList[index].timer > 0){
+                        console.log(this.state.ownList[index].id, ':', this.state.ownList[index].timer);
+                        this.state.ownList[index].timer-=5;
+                    }
+                    else{
+                        console.log(this.state.ownList[index].id, "분실 alert!");
+                    }
+                }
+            },5000);
 
-        //Data load from Server
-    
-        //bluetooth on
-        this.state.manager.onStateChange(newState => {
-            if (newState != "PoweredOn")
-                return;
+            //bluetooth on  
+            this.state.manager.onStateChange(newState => {
+                if (newState != "PoweredOn")
+                    return;
 
-            this.startDeviceScan();
-        }, true);
+                this.startDeviceScan();
+            }, true);
+        });
     }
 
+    componentDidMount() {
+       
+    }
+
+    //Get User Bluetooth Device
+    getUserDevice(){
+        return new Promise((resolve, reject)=>{
+            fetch('https://qcz8wf7nqe.execute-api.ap-northeast-2.amazonaws.com/tmi/userdevice', {
+            method: 'GET',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'x-api-key': 'x8hF7gN83b3fGsJFR4nWoaFGEN95auFz9PQUDR8i'
+            },
+            }).then((res) => {
+                let items = JSON.parse(res['_bodyText'])['Items'];
+                
+                for(let index in items){
+                    const {id, name, lost_location, lost_state} = items[index];
+
+                    let deviceInfo = clone(deviceInfoTemplate);
+                    deviceInfo.id = id;
+                    deviceInfo.name = name;
+                    deviceInfo.lost_location = lost_location;
+                    deviceInfo.lost_state = lost_state;
+                    deviceInfo.timer = timer;
+        
+                    this.state.ownList.push(deviceInfo);
+                }
+
+                resolve('finish');
+            })
+            .catch((error) => {reject(error)});
+        }) 
+    }
+
+    //Post User Bluetooth Device
+    postUserDevice(id, name, lost_state, lost_location){
+        fetch('https://qcz8wf7nqe.execute-api.ap-northeast-2.amazonaws.com/tmi/userdevice', {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'x-api-key': 'x8hF7gN83b3fGsJFR4nWoaFGEN95auFz9PQUDR8i'
+            },
+            body: JSON.stringify({
+                "id": id,
+                "name": name,
+                "lost_state": lost_state,
+                "lost_location": lost_location
+            }),
+        }).then((res) => {console.log(res)})
+        .catch(error => console.error('Error:', error));
+    }
+
+    //Modal onoff
     _toggleModal = () => {
         this.setState({ isModalVisible: !this.state.isModalVisible });
     }
 
+    //Device Click => Modal on
     pressDevice = (device) => {
-        console.log(device);
         this.setState({clickedDevice: device});
         this._toggleModal();
     }
 
+    //Clicked Device => DynamoDB
     pairDevice = () => {
-        console.log(this.state.clickedDevice);
         // this.state.ownList.push();
+        const {id, name, lost_state, lost_location} = this.state.clickedDevice;
+        this.postUserDevice(id, name, lost_state, lost_location);
         this._toggleModal();
     }
 
     startDeviceScan = () => {
         console.log("ble scan on");
-        //todo : 사용자가 알아차릴 수 있는 것으로 해서 scan on 알려주기 (toast)
+        //To-do : 사용자가 알아차릴 수 있는 것으로 해서 scan on 알려주기 (toast)
 
         //Detected Device Array 및 Screen clear
         this.setState({ text: [] });
@@ -88,28 +157,29 @@ class ItemList extends React.Component {
                     return;
                 }
 
-                //기기 데이터 셋팅
+                //기기 데이터 초기화
                 let { id, name } = device;
-                let status = false;
                 if(name === null)
                     name = 'unknown';
 
-                deviceInfoTemplate = {id, name, status,};
+                let deviceInfo = clone(deviceInfoTemplate);
+                deviceInfo.id = id;
+                deviceInfo.name = name;
+                deviceInfo.lost_location = null;
 
-                console.log(deviceInfoTemplate);
-
-                //내가 소유한 기기 검색
-                if (device.name === "blueno1" || device.name === "blueno2"){
-                    deviceInfoTemplate.status = true;
-
-                    this.setState(prevState => ({
-                        detectList: [deviceInfoTemplate, ...prevState.detectList]
-                    }));
-                    this.state.detectList.push(deviceInfoTemplate);
+                //device heart beat
+                for(let index in this.state.ownList){
+                    if(this.state.ownList[index].id === device.id){
+                        console.log(device.id, " is alive");
+                        this.state.ownList[index].timer = timer;
+                        return;
+                    }
                 }
 
                 //소유한 기기가 아닐 경우, 뒤에 push
-                this.state.detectList.push(deviceInfoTemplate);
+                console.log("Detected : ", deviceInfo);
+                this.state.detectList.push(deviceInfo);
+                this.forceUpdate();
             }
         );
     }
@@ -128,6 +198,9 @@ class ItemList extends React.Component {
     }
 
     render() {
+        console.log("ownlist : ", this.state.ownList);
+        console.log("detectList : ", this.state.detectList);
+
         return (
             <View style={styles.listStyle}>
                 <Modal 
@@ -146,14 +219,15 @@ class ItemList extends React.Component {
                 </Modal>
                 <Text style={styles.mainText}>디바이스</Text>
                 <FlatList 
-                    data={this.state.detectList}
-                    extraData={this.state.detectList}
+                    data={[...this.state.ownList, ...this.state.detectList]}
+                    extraData={this.state}
                     renderItem={({item})=>(
                         this.renderList(item)
                     )}
-                    keyExtractor={item => item.id}/>
+                    keyExtractor={item => item.id}
+                />
             </View>
-        );
+        )
     }
 }
 
