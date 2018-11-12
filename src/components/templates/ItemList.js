@@ -1,13 +1,14 @@
 import React from 'react';
-import { StyleSheet, View, Text, FlatList, TouchableOpacity } from 'react-native';
+import {Vibration, StyleSheet, View, Text, FlatList, TouchableOpacity } from 'react-native';
 import Modal from 'react-native-modal'
 
 import { BleManager } from 'react-native-ble-plx';
 
-import { clone } from '../../function/common'
+import { clone, toast, vibrationOn, vibrationOff } from '../../function/common'
 
-let deviceInfoTemplate = {id: '', name: '', lost_state: 0, lost_location: '', timer: -1, own_state: 0}
-const timer = 10;
+let deviceInfoTemplate = {id: '', name: '', lost_state: 0, lost_location: '', timer: -1, own_state: 0, alert_state: 1}
+const timer = 5;
+const vibrate_pattern = [100, 500, 100, 500, 100, 500, 100, 500, 100, 500, 100, 500]
 
 class ItemList extends React.PureComponent {
     constructor(props) {
@@ -28,6 +29,7 @@ class ItemList extends React.PureComponent {
     
         this.getUserDevice = this.getUserDevice.bind(this);
         this.startDeviceScan = this.startDeviceScan.bind(this);
+        this.stopVibrate = this.stopVibrate.bind(this);
     }
 
     componentWillMount() {
@@ -40,7 +42,12 @@ class ItemList extends React.PureComponent {
                         this.state.ownList[index].timer-=5;
                     }
                     else{
-                        // console.log(this.state.ownList[index].id, "분실 alert!");
+                        this.state.ownList[index].lost_state = 1;
+                        if(this.state.ownList[index].alert_state){                         
+                            vibrationOn(vibrate_pattern)
+                        }
+
+                        this.forceUpdate();
                     }
                 }
             },5000);
@@ -78,6 +85,7 @@ class ItemList extends React.PureComponent {
                     deviceInfo.lost_state = lost_state;
                     deviceInfo.timer = timer;
                     deviceInfo.own_state = 1;
+                    deviceInfo.alert_state = 1;
         
                     this.state.ownList.push(deviceInfo);
                 }
@@ -133,6 +141,12 @@ class ItemList extends React.PureComponent {
         })
     }
 
+    stopVibrate(){
+        vibrationOff();
+        this.state.clickedDevice.alert_state = 0;
+        this._toggleModal();
+    }
+
     //Modal onoff
     _toggleModal = () => {
         this.setState({ isModalVisible: !this.state.isModalVisible });
@@ -141,7 +155,6 @@ class ItemList extends React.PureComponent {
     //Device Click => Modal on
     pressDevice = (device) => {
         this.setState({clickedDevice: device});
-    
         this._toggleModal();
     }
 
@@ -150,7 +163,6 @@ class ItemList extends React.PureComponent {
         const {id, name, lost_state, lost_location} = this.state.clickedDevice;
         this.postUserDevice(id, name, lost_state, lost_location)
         .then((errorCheck)=>{
-
             //errorCheck가 0이면 200ok
             if(errorCheck === 0){
 
@@ -159,14 +171,17 @@ class ItemList extends React.PureComponent {
                     if(this.state.detectList[index].id === id){
                         //Rendering Style 변경
                         this.state.detectList[index].own_state = 1;
+                        this.state.detectList[index].alert_state = 1;
                         let temp = this.state.detectList.splice(index,1);
                         this.state.ownList.push(temp[0]);
                         this.forceUpdate();
+                        toast(`pairing ${id}`);
                         break;
                     }
                 }
             }else{
-                //To-Do : pairing 실패 알람
+                //pairing 실패 알람
+                toast('pairing에 실패했습니다. 잠시 후, 다시 시도해주세요.');
             }
         })
         this._toggleModal();
@@ -187,11 +202,13 @@ class ItemList extends React.PureComponent {
                         //Rendering Style 변경
                         this.state.ownList.splice(index,1);
                         this.forceUpdate();
+                        toast(`unpairing ${id}`);
                         break;
                     }
                 }
             }else{
-                //To-Do : pairing 실패 알람
+                //unpairing 실패 알람
+                toast('unpairing에 실패했습니다. 잠시 후, 다시 시도해주세요.');
             }
         })
         this._toggleModal();
@@ -238,8 +255,15 @@ class ItemList extends React.PureComponent {
                 //device heart beat
                 for(let index in this.state.ownList){
                     if(this.state.ownList[index].id === device.id){
-                        // console.log(device.id, " is alive");
                         this.state.ownList[index].timer = timer;
+
+                        //잃어버린 기기를 다시 찾았을 경우
+                        if(this.state.ownList[index].lost_state){
+                            this.state.ownList[index].lost_state = 0;
+                            this.state.ownList[index].alert_state = 1;
+                            vibrationOff();
+                            this.forceUpdate();
+                        }
                         return;
                     }
                 }
@@ -251,15 +275,14 @@ class ItemList extends React.PureComponent {
         );
     }
 
-    renderList = (item) => {
-        let itemStyle;
+    renderList(item){
+        let itemStyle = [styles.itemWrapper];
 
         //소유한 기기일 때 style
         if(item.own_state)
-            itemStyle = styles.ownItemWrapper;
-        else
-            itemStyle = styles.itemWrapper;
-        
+            itemStyle.push(styles.ownItemWrapper);
+        if(item.lost_state)
+            itemStyle.push(styles.lostItemWrapper);
 
         return(
             <TouchableOpacity 
@@ -278,11 +301,29 @@ class ItemList extends React.PureComponent {
             <Modal isVisible={this.state.isModalVisible} animationInTiming={100}>
                 <View style={{flex:1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
                     <View style={{flex:0, flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width:250, height:100, elevation: 3, backgroundColor: color1}}>
-                        {this.state.clickedDevice !== null && this.state.clickedDevice.own_state ? 
-                            this.renderUnpairing(): this.renderPairing()} 
+                        {
+                           this.state.clickedDevice !== null ? 
+                           (this.state.clickedDevice.lost_state ? 
+                           (this.state.clickedDevice.alert_state ? this.renderStopVibrate() : this.renderUnpairing()): 
+                           (this.state.clickedDevice.own_state ? this.renderUnpairing() : this.renderPairing()))
+                           :{}
+                        }
+                        
                     </View>
                 </View>
             </Modal>
+        );
+    }
+
+    renderStopVibrate() {
+        return(
+            <View>
+                <Text>아직 찾지 못한 Device입니다. 진동을 멈추시겠습니까?</Text>
+                <View style={{flex:0, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', width:200}}>
+                    <TouchableOpacity onPress={this.stopVibrate}><Text>Yes</Text></TouchableOpacity>
+                    <TouchableOpacity onPress={this._toggleModal}><Text>No</Text></TouchableOpacity>
+                </View>
+            </View>
         );
     }
 
@@ -348,12 +389,11 @@ itemWrapper:{
     backgroundColor: color2
 },  
 ownItemWrapper:{
-    width: 300,
-    height: 120,
-    marginBottom: 15,
-    elevation: 3,
     backgroundColor: '#05FFE1'
 },  
+lostItemWrapper:{
+    backgroundColor: '#FF0000'
+},
 mainText:{
     marginTop: 15,
     marginBottom: 15,
