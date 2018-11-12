@@ -1,3 +1,5 @@
+import { ToastAndroid, Vibration } from 'react-native'
+
 function clone(obj){
     if(obj === null && typeof(obj) !== 'object')
         return obj;
@@ -13,4 +15,23 @@ function clone(obj){
     return copy;
 }
 
-export { clone };
+function toast(text){
+    ToastAndroid.showWithGravity(
+        text,
+        ToastAndroid.SHORT,
+        ToastAndroid.CENTER,
+    );
+}
+
+function vibrationOn(time){
+    if(time === undefined)
+        time = 1000;
+
+    Vibration.vibrate(time);
+}
+
+function vibrationOff(){
+    Vibration.cancel();
+}
+
+export { clone, toast, vibrationOn, vibrationOff };
