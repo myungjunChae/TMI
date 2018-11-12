@@ -6,7 +6,7 @@ import { BleManager } from 'react-native-ble-plx';
 
 import { clone } from '../../function/common'
 
-let deviceInfoTemplate = {id: '', name: '', lost_state: 0, lost_location: '', timer: -1}
+let deviceInfoTemplate = {id: '', name: '', lost_state: 0, lost_location: '', timer: -1, own_state: 0}
 const timer = 10;
 
 class ItemList extends React.PureComponent {
@@ -22,7 +22,7 @@ class ItemList extends React.PureComponent {
 
             clickedDevice: null,
 
-             //Bluetooth Manager
+            //Bluetooth Manager
             manager: new BleManager()
         };
     
@@ -40,7 +40,7 @@ class ItemList extends React.PureComponent {
                         this.state.ownList[index].timer-=5;
                     }
                     else{
-                        console.log(this.state.ownList[index].id, "분실 alert!");
+                        // console.log(this.state.ownList[index].id, "분실 alert!");
                     }
                 }
             },5000);
@@ -53,10 +53,6 @@ class ItemList extends React.PureComponent {
                 this.startDeviceScan();
             }, true);
         });
-    }
-
-    componentDidMount() {
-       
     }
 
     //Get User Bluetooth Device
@@ -81,6 +77,7 @@ class ItemList extends React.PureComponent {
                     deviceInfo.lost_location = lost_location;
                     deviceInfo.lost_state = lost_state;
                     deviceInfo.timer = timer;
+                    deviceInfo.own_state = 1;
         
                     this.state.ownList.push(deviceInfo);
                 }
@@ -93,21 +90,47 @@ class ItemList extends React.PureComponent {
 
     //Post User Bluetooth Device
     postUserDevice(id, name, lost_state, lost_location){
-        fetch('https://qcz8wf7nqe.execute-api.ap-northeast-2.amazonaws.com/tmi/userdevice', {
-            method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                'x-api-key': 'x8hF7gN83b3fGsJFR4nWoaFGEN95auFz9PQUDR8i'
-            },
-            body: JSON.stringify({
-                "id": id,
-                "name": name,
-                "lost_state": lost_state,
-                "lost_location": lost_location
-            }),
-        }).then((res) => {console.log(res)})
-        .catch(error => console.error('Error:', error));
+        return new Promise((resolve, reject)=>{
+            fetch('https://qcz8wf7nqe.execute-api.ap-northeast-2.amazonaws.com/tmi/userdevice', {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'x-api-key': 'x8hF7gN83b3fGsJFR4nWoaFGEN95auFz9PQUDR8i'
+                },
+                body: JSON.stringify({
+                    "id": id,
+                    "name": name,
+                    "lost_state": lost_state,
+                    "lost_location": lost_location
+                }),
+            }).then(res => {
+                let errorCheck = Object.keys(JSON.parse(res['_bodyText'])).length;
+                resolve(errorCheck);
+            })
+            .catch(error => console.error('Error:', error));
+        })
+    }
+
+    //Delete User Bluetooth Device
+    deleteUserDevice(id){
+        return new Promise((resolve, reject)=>{
+            fetch('https://qcz8wf7nqe.execute-api.ap-northeast-2.amazonaws.com/tmi/userdevice', {
+                method: 'DELETE',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'x-api-key': 'x8hF7gN83b3fGsJFR4nWoaFGEN95auFz9PQUDR8i'
+                },
+                body: JSON.stringify({
+                    "id": id
+                }),
+            }).then(res => {
+                let errorCheck = Object.keys(JSON.parse(res['_bodyText'])).length;
+                resolve(errorCheck);
+            })
+            .catch(error => console.error('Error:', error));
+        })
     }
 
     //Modal onoff
@@ -118,14 +141,59 @@ class ItemList extends React.PureComponent {
     //Device Click => Modal on
     pressDevice = (device) => {
         this.setState({clickedDevice: device});
+    
         this._toggleModal();
     }
 
     //Clicked Device => DynamoDB
     pairDevice = () => {
-        // this.state.ownList.push();
         const {id, name, lost_state, lost_location} = this.state.clickedDevice;
-        this.postUserDevice(id, name, lost_state, lost_location);
+        this.postUserDevice(id, name, lost_state, lost_location)
+        .then((errorCheck)=>{
+
+            //errorCheck가 0이면 200ok
+            if(errorCheck === 0){
+
+                //선택된 device, detectlist에서 삭제 및 ownList 추가
+                for(let index in this.state.detectList){
+                    if(this.state.detectList[index].id === id){
+                        //Rendering Style 변경
+                        this.state.detectList[index].own_state = 1;
+                        let temp = this.state.detectList.splice(index,1);
+                        this.state.ownList.push(temp[0]);
+                        this.forceUpdate();
+                        break;
+                    }
+                }
+            }else{
+                //To-Do : pairing 실패 알람
+            }
+        })
+        this._toggleModal();
+    }
+
+    unpairDevice = () => {
+        const {id} = this.state.clickedDevice;
+        console.log(id);
+        this.deleteUserDevice(id)
+        .then((errorCheck)=>{
+
+            //errorCheck가 0이면 200ok
+            if(errorCheck === 0){
+
+                //선택된 device, detectlist에서 삭제 및 ownList 추가
+                for(let index in this.state.ownList){
+                    if(this.state.ownList[index].id === id){
+                        //Rendering Style 변경
+                        this.state.ownList.splice(index,1);
+                        this.forceUpdate();
+                        break;
+                    }
+                }
+            }else{
+                //To-Do : pairing 실패 알람
+            }
+        })
         this._toggleModal();
     }
 
@@ -170,14 +238,13 @@ class ItemList extends React.PureComponent {
                 //device heart beat
                 for(let index in this.state.ownList){
                     if(this.state.ownList[index].id === device.id){
-                        console.log(device.id, " is alive");
+                        // console.log(device.id, " is alive");
                         this.state.ownList[index].timer = timer;
                         return;
                     }
                 }
 
                 //소유한 기기가 아닐 경우, 뒤에 push
-                console.log("Detected : ", deviceInfo);
                 this.state.detectList.push(deviceInfo);
                 this.forceUpdate();
             }
@@ -185,9 +252,18 @@ class ItemList extends React.PureComponent {
     }
 
     renderList = (item) => {
+        let itemStyle;
+
+        //소유한 기기일 때 style
+        if(item.own_state)
+            itemStyle = styles.ownItemWrapper;
+        else
+            itemStyle = styles.itemWrapper;
+        
+
         return(
             <TouchableOpacity 
-                style={styles.itemWrapper} 
+                style={itemStyle} 
                 onPress={this.pressDevice.bind(this, item)}
             >
                 <Text>{item.id}</Text>
@@ -197,26 +273,47 @@ class ItemList extends React.PureComponent {
         )
     }
 
-    render() {
-        console.log("ownlist : ", this.state.ownList);
-        console.log("detectList : ", this.state.detectList);
+    renderModal() {
+        return(
+            <Modal isVisible={this.state.isModalVisible} animationInTiming={100}>
+                <View style={{flex:1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
+                    <View style={{flex:0, flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width:250, height:100, elevation: 3, backgroundColor: color1}}>
+                        {this.state.clickedDevice !== null && this.state.clickedDevice.own_state ? 
+                            this.renderUnpairing(): this.renderPairing()} 
+                    </View>
+                </View>
+            </Modal>
+        );
+    }
 
+    renderPairing() {
+        return(
+            <View>
+                <Text>이 디바이스를 페어링하시겠습니까?</Text>
+                <View style={{flex:0, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', width:200}}>
+                    <TouchableOpacity onPress={this.pairDevice}><Text>Yes</Text></TouchableOpacity>
+                    <TouchableOpacity onPress={this._toggleModal}><Text>No</Text></TouchableOpacity>
+                </View>
+            </View>
+        );
+    }
+
+    renderUnpairing() {
+        return(
+            <View>
+                <Text>이 디바이스와 페어링를 끊으시겠습니까?</Text>
+                <View style={{flex:0, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', width:200}}>
+                    <TouchableOpacity onPress={this.unpairDevice}><Text>Yes</Text></TouchableOpacity>
+                    <TouchableOpacity onPress={this._toggleModal}><Text>No</Text></TouchableOpacity>
+                </View>
+            </View>
+        );
+    }
+
+    render() {
         return (
             <View style={styles.listStyle}>
-                <Modal 
-                    isVisible={this.state.isModalVisible}
-                    animationInTiming={100}
-                    >
-                    <View style={{flex:1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
-                        <View style={{flex:0, flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width:250, height:100, elevation: 3, backgroundColor: color1}}>
-                            <Text>이 디바이스를 페어링하시겠습니까?</Text>
-                        <View style={{flex:0, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', width:200}}>
-                            <TouchableOpacity onPress={this.pairDevice}><Text>Yes</Text></TouchableOpacity>
-                            <TouchableOpacity onPress={this._toggleModal}><Text>No</Text></TouchableOpacity>
-                        </View>
-                        </View>
-                    </View>
-                </Modal>
+                {this.renderModal()}
                 <Text style={styles.mainText}>디바이스</Text>
                 <FlatList 
                     data={[...this.state.ownList, ...this.state.detectList]}
@@ -249,6 +346,13 @@ itemWrapper:{
     marginBottom: 15,
     elevation: 3,
     backgroundColor: color2
+},  
+ownItemWrapper:{
+    width: 300,
+    height: 120,
+    marginBottom: 15,
+    elevation: 3,
+    backgroundColor: '#05FFE1'
 },  
 mainText:{
     marginTop: 15,
