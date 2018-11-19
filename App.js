@@ -9,6 +9,7 @@
 import React, { Component } from 'react';
 import { Platform, StyleSheet, Text, View, PermissionsAndroid } from 'react-native';
 import { BleManager } from 'react-native-ble-plx';
+import { SampleProvider } from './src/context';
 
 import MainPage from './src/components/pages/MainPage'
 
@@ -17,7 +18,7 @@ async function requestPermission() {
         let granted = await PermissionsAndroid.requestMultiple(
             [
                 PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
-                PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+                PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
             ]).then((result) => { /*console.log('result', result)*/ });
 
         //todo : 앱 데이터 허용안했을 경우, 경고창 뜨기
@@ -33,7 +34,7 @@ async function requestPermission() {
 
 deviceList = [];
 
-class App extends Component {
+class App extends Component {git 
     constructor() {
         super();
     }
@@ -44,7 +45,9 @@ class App extends Component {
 
     render() {
         return (
-            <MainPage> deviceList={deviceList}</MainPage>
+            <SampleProvider>
+                <MainPage> deviceList={deviceList}</MainPage>
+            </SampleProvider>
         );
     }
 }

@@ -4,7 +4,9 @@ import Modal from 'react-native-modal'
 
 import { BleManager } from 'react-native-ble-plx';
 
-import { clone, toast, vibrationOn, vibrationOff } from '../../function/common'
+import { clone, toast, vibrationOn, vibrationOff } from '../../function/common';
+import { SampleConsumer } from '../../context';
+import confidential from '../../../confidential.json'
 
 let deviceInfoTemplate = {id: '', name: '', lost_state: 0, lost_location: '', timer: -1, own_state: 0, alert_state: 1}
 const timer = 5;
@@ -23,6 +25,9 @@ class ItemList extends React.PureComponent {
 
             clickedDevice: null,
 
+            //Context API
+            test: this.props.info,
+
             //Bluetooth Manager
             manager: new BleManager()
         };
@@ -32,6 +37,7 @@ class ItemList extends React.PureComponent {
         this.stopVibrate = this.stopVibrate.bind(this);
     }
 
+    /* React Life Cycle */
     componentWillMount() {
         this.getUserDevice().then(()=>{
             //beartBeat on
@@ -42,7 +48,25 @@ class ItemList extends React.PureComponent {
                         this.state.ownList[index].timer-=5;
                     }
                     else{
-                        this.state.ownList[index].lost_state = 1;
+                        //처음 분실이 detecting 됐을 때
+                        if(this.state.ownList[index].lost_state == 0){
+                            this.state.ownList[index].lost_state = 1;
+                            const {id, name, lost_state, lost_location} = this.state.ownList[index];
+
+                            navigator.geolocation.getCurrentPosition( 
+                                (position) => { 
+                                    let location = `${position.coords.latitude},${position.coords.longitude}`;
+                                    this.postUserDevice(id, name, lost_state, location);
+                                    this.props.setLostDeviceInfo({ name, location });
+                                }, 
+                                (error) => console.log(new Date(), error), 
+                                {
+                                    enableHighAccuracy: false,
+                                    timeout: 5000
+                                }
+                            );
+                        }
+
                         if(this.state.ownList[index].alert_state){                         
                             vibrationOn(vibrate_pattern)
                         }
@@ -50,7 +74,7 @@ class ItemList extends React.PureComponent {
                         this.forceUpdate();
                     }
                 }
-            },5000);
+            },30000);
 
             //bluetooth on  
             this.state.manager.onStateChange(newState => {
@@ -62,15 +86,16 @@ class ItemList extends React.PureComponent {
         });
     }
 
+    /* http methods */
     //Get User Bluetooth Device
     getUserDevice(){
         return new Promise((resolve, reject)=>{
-            fetch('https://qcz8wf7nqe.execute-api.ap-northeast-2.amazonaws.com/tmi/userdevice', {
+            fetch(confidential.AWS_URL, {
             method: 'GET',
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
-                'x-api-key': 'x8hF7gN83b3fGsJFR4nWoaFGEN95auFz9PQUDR8i'
+                'x-api-key': confidential.AWS_KEY
             },
             }).then((res) => {
                 let items = JSON.parse(res['_bodyText'])['Items'];
@@ -99,12 +124,12 @@ class ItemList extends React.PureComponent {
     //Post User Bluetooth Device
     postUserDevice(id, name, lost_state, lost_location){
         return new Promise((resolve, reject)=>{
-            fetch('https://qcz8wf7nqe.execute-api.ap-northeast-2.amazonaws.com/tmi/userdevice', {
+            fetch(confidential.AWS_URL, {
                 method: 'POST',
                 headers: {
                     Accept: 'application/json',
                     'Content-Type': 'application/json',
-                    'x-api-key': 'x8hF7gN83b3fGsJFR4nWoaFGEN95auFz9PQUDR8i'
+                    'x-api-key': confidential.AWS_KEY
                 },
                 body: JSON.stringify({
                     "id": id,
@@ -123,12 +148,12 @@ class ItemList extends React.PureComponent {
     //Delete User Bluetooth Device
     deleteUserDevice(id){
         return new Promise((resolve, reject)=>{
-            fetch('https://qcz8wf7nqe.execute-api.ap-northeast-2.amazonaws.com/tmi/userdevice', {
+            fetch(confidential.AWS_URL, {
                 method: 'DELETE',
                 headers: {
                     Accept: 'application/json',
                     'Content-Type': 'application/json',
-                    'x-api-key': 'x8hF7gN83b3fGsJFR4nWoaFGEN95auFz9PQUDR8i'
+                    'x-api-key': confidential.AWS_KEY
                 },
                 body: JSON.stringify({
                     "id": id
@@ -275,6 +300,7 @@ class ItemList extends React.PureComponent {
         );
     }
 
+    /* About Render */
     renderList(item){
         let itemStyle = [styles.itemWrapper];
 
@@ -369,6 +395,20 @@ class ItemList extends React.PureComponent {
     }
 }
 
+const ListContainer = () => (
+    <SampleConsumer>
+    {
+        ({state, actions}) => (
+            // props 설정
+            <ItemList 
+                info={state.info}
+                setLostDeviceInfo={actions.setLostDeviceInfo}
+            />
+        )
+    }
+    </SampleConsumer>
+)
+
 const color1= '#dddddd';
 const color2= '#ffffff';
 const color3= '#cccccc';
@@ -403,4 +443,4 @@ mainText:{
 }
 })
 
-export default ItemList;
+export default ListContainer;

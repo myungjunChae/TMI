@@ -1,74 +1,40 @@
 import React from 'react';
 import { 
-    geolocation,
     StyleSheet, 
     Text, View, Button, 
     FlatList, TouchableNativeFeedback,
     PermissionsAndroid } from 'react-native';
-import { StyledView } from './style/style';
 import styled from 'styled-components';
 
-import MapView, { PROVIDER_GOOGLE } from 'react-native-maps'; // remove PROVIDER_GOOGLE import if not using Google Maps
+import MapView, { PROVIDER_GOOGLE } from 'react-native-maps'; 
 
-const styles = StyleSheet.create({
- container: {
-   ...StyleSheet.absoluteFillObject,
-   height: 400,
-   width: 400,
-   justifyContent: 'flex-end',
-   alignItems: 'center',
- },
- map: {
-   ...StyleSheet.absoluteFillObject,
- },
-});
-
-var markers = [
-    {
-      latitude: 37.245958,
-      longitude: 127.077219,
-      title: 'Foo Place',
-      subtitle: '1234 Foo Drive'
-    }
-  ];
+import { SampleConsumer } from '../../context';
 
 class Map extends React.Component{
-    constructor() {
-        super();
+    static defaultProps = {
+        lostItems: []
+    }
+
+    constructor(props) {
+        super(props);
 
         this.state = {
             position:{
                 latitude: 0,
                 longitude: 0
-            }
+            },
+            // markers: (this.props.lostItems === 'undefined') ? this.props.lostItems : {}
+            markers: this.props.lostItems,
         }
     }
 
-    componentDidMount() {
-        navigator.geolocation.getCurrentPosition( 
-            (position) => { 
-                this.setState({
-                    position:{
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude
-                    } 
-                });
-                console.log(position.coords)
-                console.log(this.state.position);
-            }, 
-            (error) => console.log(new Date(), error), 
-            {
-                enableHighAccuracy: false,
-                timeout: 5000
-            }
-        );
-    }
-
     render() {
+        console.log('map render');
+        console.log(this.state.info);
         return (
             <View style={styles.container}>
                 <MapView
-                provider={PROVIDER_GOOGLE} // remove if not using Google Maps
+                provider={PROVIDER_GOOGLE}
                 style={styles.map}
                 region={{
                     latitude: 37.245958,
@@ -77,19 +43,49 @@ class Map extends React.Component{
                     longitudeDelta: 0.0121,
                 }}
                 >
-                <MapView.Marker
-                        // coordinate={{
-                        //     latitude: 37.245958,
-                        //     longitude: 127.077219
-                        // }}
-                        coordinate={this.state.position}
-                        title={"Foo Place"}
-                        description={"description"}
-                    />
+                {this.state.markers.map((contact, i)=>{
+                    console.log(contact);
+                    return (
+                    <MapView.Marker
+                        coordinate={contact.position}
+                        title={contact.title}
+                        // description={contact.subtitle}
+                        key = {i}
+                    />)
+                })}
                 </MapView>
             </View>
         );
     }
 }
 
-export default Map;
+const MapContainer = () => {
+    return(
+        <SampleConsumer>
+        {
+            ({state}) => (
+                // props 설정
+                <Map 
+                    lostItems={state.info}
+                />
+            )
+        }
+        </SampleConsumer>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+      ...StyleSheet.absoluteFillObject,
+      height: 400,
+      width: 400,
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+    },
+    map: {
+      ...StyleSheet.absoluteFillObject,
+    },
+});
+
+   
+export default MapContainer;

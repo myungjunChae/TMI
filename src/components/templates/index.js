@@ -1,5 +1,5 @@
 import ItemList from './ItemList';
-import DetectList from './DetectList';
+import Map from './Map';
 import Setting from './Setting';
 
-export {ItemList, DetectList, Setting};
+export {ItemList, Map, Setting};
