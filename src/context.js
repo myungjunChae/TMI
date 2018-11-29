@@ -6,23 +6,13 @@ const { Provider, Consumer: SampleConsumer } = Context;
 
 class SampleProvider extends Component {
     state = {
-        info: []
+        updateState: true
     }
 
     actions = {
-        setLostDeviceInfo: (value) => {
-            console.log(value);
-            let title = value.title;
-            let latitude = Number(value.location.split(',')[0]);
-            let longitude = Number(value.location.split(',')[1]);
-
-            this.state.info.push({
-                position:{
-                    latitude, 
-                    longitude
-                },
-                title
-            });
+        forceUpdate: () => {
+            console.log('forceUpdate');
+            this.setState({updateState: !this.updateState});
         }
     }
 

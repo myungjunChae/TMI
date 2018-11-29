@@ -9,10 +9,11 @@ import styled from 'styled-components';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps'; 
 
 import { SampleConsumer } from '../../context';
+import confidential from '../../../confidential.json'
 
 class Map extends React.Component{
     static defaultProps = {
-        lostItems: []
+        forceUpdate: true
     }
 
     constructor(props) {
@@ -23,14 +24,61 @@ class Map extends React.Component{
                 latitude: 0,
                 longitude: 0
             },
-            // markers: (this.props.lostItems === 'undefined') ? this.props.lostItems : {}
-            markers: this.props.lostItems,
+            markers: [],
         }
     }
 
+    componentDidMount(){
+        this.getUserDevice();
+    }
+
+    componentWillReceiveProps(){
+        console.log('componentWillReceiveProps');
+        this.getUserDevice().then(() =>{
+            this.forceUpdate();
+            }
+        )
+    }
+
+    getUserDevice(){
+        return new Promise((resolve, reject)=>{
+            fetch(confidential.AWS_URL, {
+            method: 'GET',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'x-api-key': confidential.AWS_KEY
+            },
+            }).then((res) => {
+                console.log('getUserDevice')
+                let items = JSON.parse(res['_bodyText'])['Items'];
+                
+                for(let index in items){
+                    const {id, name, lost_location, lost_state} = items[index];
+
+                    if(lost_state === 1){
+                        let title = name;
+                        let latitude = Number(lost_location.split(',')[0]);
+                        let longitude = Number(lost_location.split(',')[1]);
+            
+                        let obj = {
+                            position:{
+                                latitude, 
+                                longitude
+                            },
+                            title
+                        }
+                        this.setState({markers: [...this.state.markers, obj]});
+                    }
+                }
+
+                resolve('finish');
+            })
+            .catch((error) => {reject(error)});
+        }) 
+    }
+
     render() {
-        console.log('map render');
-        console.log(this.state.info);
         return (
             <View style={styles.container}>
                 <MapView
@@ -49,7 +97,7 @@ class Map extends React.Component{
                     <MapView.Marker
                         coordinate={contact.position}
                         title={contact.title}
-                        // description={contact.subtitle}
+                        subtitle={'text'}
                         key = {i}
                     />)
                 })}
@@ -63,10 +111,10 @@ const MapContainer = () => {
     return(
         <SampleConsumer>
         {
-            ({state}) => (
+            (state) => (
                 // props 설정
                 <Map 
-                    lostItems={state.info}
+                    forceUpdate={state.updateState}
                 />
             )
         }
