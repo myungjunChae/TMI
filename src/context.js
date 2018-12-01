@@ -11,7 +11,6 @@ class SampleProvider extends Component {
 
     actions = {
         forceUpdate: () => {
-            console.log('forceUpdate');
             this.setState({updateState: !this.updateState});
         }
     }

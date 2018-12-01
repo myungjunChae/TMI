@@ -15,18 +15,13 @@ import MainPage from './src/components/pages/MainPage'
 
 async function requestPermission() {
     try {
-        let granted = await PermissionsAndroid.requestMultiple(
-            [
+        let granted = await PermissionsAndroid.requestMultiple([
                 PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
                 PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-            ]).then((result) => { /*console.log('result', result)*/ });
+            ]).then((result) => {});
 
         //todo : 앱 데이터 허용안했을 경우, 경고창 뜨기
-        // if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        //     console.log("Using Location")
-        // } else {
-        //     console.log("Not using Location")
-        // }
+
     } catch (err) {
         console.warn(err)
     }
