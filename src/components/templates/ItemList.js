@@ -59,8 +59,11 @@ class ItemList extends React.PureComponent {
                             navigator.geolocation.getCurrentPosition( 
                                 (position) => {
                                     let location = `${position.coords.latitude},${position.coords.longitude}`;
-                                    this.postUserDevice(id, name, lost_state, location);
-                                    this.props.forceUpdate(); // Map Component Force update
+
+                                    //For eliminate dynamodb physical limits
+                                    this.postUserDevice(id, name, lost_state, location).then(()=>{
+                                        this.props.forceUpdate(); // Map Component Force update
+                                    });
                                 }, 
                                 (error) => console.log(new Date(), error), 
                                 {
