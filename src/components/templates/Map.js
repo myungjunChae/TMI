@@ -11,6 +11,11 @@ import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import { SampleConsumer } from '../../context';
 import confidential from '../../../confidential.json'
 
+const default_postion = {
+    latitude: 37.247471,
+    longitude: 127.078421
+};
+
 class Map extends React.Component{
     static defaultProps = {
         forceUpdate: true
@@ -40,6 +45,30 @@ class Map extends React.Component{
         )
     }
 
+    setPosition(){
+        let position = {
+            latitude: 0,
+            longitude: 0,
+        }
+        console.log('setPostion : ', this.state.markers);
+
+        for(let index in this.state.markers){
+            position.latitude += this.state.markers[index].position.latitude;
+            position.longitude += this.state.markers[index].position.longitude;
+        }
+
+        if(this.state.markers.length){
+            position.latitude /= this.state.markers.length;
+            position.longitude /= this.state.markers.length;
+        }else{
+            position.latitude = default_postion.latitude;
+            position.longitude = default_postion.longitude;
+        }
+
+        this.setState({position});
+        console.log('default_position : ', this.state.default_position);
+    }
+
     getUserDevice(){
         return new Promise((resolve, reject)=>{
             fetch(confidential.AWS_URL, {
@@ -50,9 +79,11 @@ class Map extends React.Component{
                 'x-api-key': confidential.AWS_KEY
             },
             }).then((res) => {
-                console.log('getUserDevice')
                 let items = JSON.parse(res['_bodyText'])['Items'];
                 
+                //set markers none
+                this.setState({markers: []});
+
                 for(let index in items){
                     const {id, name, lost_location, lost_state} = items[index];
 
@@ -71,6 +102,9 @@ class Map extends React.Component{
                         this.setState({markers: [...this.state.markers, obj]});
                     }
                 }
+                
+                //set default map geolocation
+                this.setPosition();
 
                 resolve('finish');
             })
@@ -85,8 +119,8 @@ class Map extends React.Component{
                 provider={PROVIDER_GOOGLE}
                 style={styles.map}
                 region={{
-                    latitude: 37.245958,
-                    longitude: 127.077219,
+                    latitude: this.state.position.latitude,
+                    longitude: this.state.position.longitude,
                     latitudeDelta: 0.015,
                     longitudeDelta: 0.0121,
                 }}
