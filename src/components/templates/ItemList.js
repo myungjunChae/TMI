@@ -3,6 +3,7 @@ import {Vibration, StyleSheet, View, Text, FlatList, TouchableOpacity } from 're
 import Modal from 'react-native-modal'
 
 import { BleManager } from 'react-native-ble-plx';
+import LinearGradient from 'react-native-linear-gradient';
 
 import { clone, toast, vibrationOn, vibrationOff } from '../../function/common';
 import { SampleConsumer } from '../../context';
@@ -324,22 +325,26 @@ class ItemList extends React.PureComponent {
     /* About Render */
     renderList(item){
         let itemStyle = [styles.itemWrapper];
+        let colors = [];
 
         //소유한 기기일 때 style
         if(item.own_state)
-            itemStyle.push(styles.ownItemWrapper);
+            colors = ['#E1F5FE', '#4FC3F7'];
+        else
+            colors = ['#fff', '#fff'];
+        
         if(item.lost_state)
             itemStyle.push(styles.lostItemWrapper);
+        
 
         return(
-            <TouchableOpacity 
-                style={itemStyle} 
-                onPress={this.pressDevice.bind(this, item)}
-            >
-                <Text>{item.id}</Text>
-                <Text>{item.name}</Text>
-                <Text>{item.state}</Text>
-            </TouchableOpacity>
+            <LinearGradient start={{x: 0, y: 0}} end={{x: 1, y: 0}} colors={colors} style={styles.itemWrapper}>
+                <TouchableOpacity onPress={this.pressDevice.bind(this, item)}>
+                    <Text>{item.id}</Text>
+                    <Text>{item.name}</Text>
+                    <Text>{item.state}</Text>
+                </TouchableOpacity>
+            </LinearGradient>
         )
     }
 
@@ -464,8 +469,7 @@ itemWrapper:{
     width: 300,
     height: 120,
     marginBottom: 15,
-    elevation: 3,
-    backgroundColor: color2
+    elevation: 3
 },  
 ownItemWrapper:{
     backgroundColor: '#05FFE1'
