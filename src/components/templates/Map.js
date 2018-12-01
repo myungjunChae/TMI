@@ -38,7 +38,6 @@ class Map extends React.Component{
     }
 
     componentWillReceiveProps(){
-        console.log('componentWillReceiveProps');
         this.getUserDevice().then(() =>{
             this.forceUpdate();
             }
@@ -50,7 +49,6 @@ class Map extends React.Component{
             latitude: 0,
             longitude: 0,
         }
-        console.log('setPostion : ', this.state.markers);
 
         for(let index in this.state.markers){
             position.latitude += this.state.markers[index].position.latitude;
@@ -65,8 +63,7 @@ class Map extends React.Component{
             position.longitude = default_postion.longitude;
         }
 
-        this.setState({position});
-        console.log('default_position : ', this.state.default_position);
+        this.setState({position: position});
     }
 
     getUserDevice(){
@@ -81,7 +78,7 @@ class Map extends React.Component{
             }).then((res) => {
                 let items = JSON.parse(res['_bodyText'])['Items'];
                 
-                //set markers none
+                //set markers empty
                 this.setState({markers: []});
 
                 for(let index in items){
