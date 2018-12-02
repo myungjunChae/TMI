@@ -11,7 +11,7 @@ import { Platform, StyleSheet, Text, View, PermissionsAndroid } from 'react-nati
 import { BleManager } from 'react-native-ble-plx';
 import { SampleProvider } from './src/context';
 
-import MainPage from './src/components/pages/MainPage'
+import Navigator from './src/components/pages/Navigator';
 
 async function requestPermission() {
     try {
@@ -27,8 +27,6 @@ async function requestPermission() {
     }
 }
 
-deviceList = [];
-
 class App extends Component {git 
     constructor() {
         super();
@@ -41,7 +39,7 @@ class App extends Component {git
     render() {
         return (
             <SampleProvider>
-                <MainPage> deviceList={deviceList}</MainPage>
+                <Navigator></Navigator>
             </SampleProvider>
         );
     }
