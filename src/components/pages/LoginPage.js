@@ -40,6 +40,8 @@ class LoginPage extends React.Component{
 
         this.checkUserValid();
 
+        navigate('MainPage');
+
         if(this.state.valid.ID && this.state.valid.PW)
             navigate('MainPage');
         else{

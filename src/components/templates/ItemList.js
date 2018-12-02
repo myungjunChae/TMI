@@ -344,11 +344,15 @@ class ItemList extends React.PureComponent {
 
         return(
             <LinearGradient start={{x: 0, y: 0}} end={{x: 1, y: 0}} colors={colors} style={styles.itemWrapper}>
-                <TouchableOpacity onPress={this.pressDevice.bind(this, item)}>
+                {/*<TouchableOpacity onPress={this.pressDevice.bind(this, item)}>
                     <Text>{item.id}</Text>
                     <Text>{item.name}</Text>
                     <Text>{item.state}</Text>
-                </TouchableOpacity>
+                </TouchableOpacity>*/}
+                <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+                    <Text style={{fontSize:25, fontWeight:'bold'}}>{item.name}</Text>
+                    <Text>{item.id}</Text>
+                </View>
             </LinearGradient>
         )
     }
