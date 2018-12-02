@@ -10,6 +10,7 @@ import LinearGradient from 'react-native-linear-gradient';
 
 //User Module
 import { toast } from '../../function/common';
+import { ThemeConsumer } from 'react-native-elements';
 
 
 class LoginPage extends React.Component{
@@ -20,33 +21,45 @@ class LoginPage extends React.Component{
     constructor(props){
         super(props);
         this.state = {
+            test: null,
+            valid:{
+                ID: false,
+                PW: false,
+            },
             forms:{
                 ID: '',
                 PW: ''
             }
         }
+
+        this.pressLoginButton = this.pressLoginButton.bind(this);
     }
     //user_Method
     pressLoginButton(){
-        console.log("onPress")
         const {navigate} = this.props.navigation;
 
-        if(this.checkUserValid())
+        this.checkUserValid();
+
+        if(this.state.valid.ID && this.state.valid.PW)
             navigate('MainPage');
-        else
-            toast(`Check your ID and Password`);
+        else{
+            this.setState({
+                valid:{
+                    ID: false,
+                    PW: false
+                }
+            },()=>{toast(`Check your ID and Password`);})
+        }
     }
 
     checkUserValid(){
         const user_info = {ID:'cmj9597@naver.com', PW:'test1234'};
         
         Object.keys(this.state.forms).map((property)=>{
-            if(this.state.forms[property] !== user_info[property]){
-                return -1; 
+            if(this.state.forms[property] === user_info[property]){
+                this.state.valid[property] = true;
             }
         });
-
-        return 1;
     }  
 
     //user_setMethod
@@ -103,8 +116,10 @@ class LoginPage extends React.Component{
 
     renderButton(){
         return(
-            <TouchableOpacity onPress={this.pressLoginButton}>
-                <Text style={[styles.form, styles.button]}></Text>
+            <TouchableOpacity style={[styles.form, styles.button]} onPress={this.pressLoginButton}>
+                <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+                    <Text>login</Text>
+                </View>
             </TouchableOpacity>
         )
     }
