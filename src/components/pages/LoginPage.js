@@ -71,7 +71,7 @@ class LoginPage extends React.Component{
                         <TextInput
                             style={{color:'#ffffff'}}
                             placeholder={property}
-                            placeholderTextColor='#ff695e'
+                            placeholderTextColor='#ffffff'
                             onChangeText={(input) => {
                                 this.setFormsData(property, input); 
                             }}
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
         marginTop: 20
     },
     input:{
-        backgroundColor: '#ffffff',
+        backgroundColor: '#f774a5',
     },
     button:{
         marginTop: 60,
