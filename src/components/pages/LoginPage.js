@@ -9,6 +9,7 @@ import { View, Text, TextInput, TouchableOpacity,
 import LinearGradient from 'react-native-linear-gradient';
 
 //User Module
+import { toast } from '../../function/common';
 
 
 class LoginPage extends React.Component{
@@ -27,8 +28,26 @@ class LoginPage extends React.Component{
     }
     //user_Method
     pressLoginButton(){
-        console.log(this.state.forms);
+        console.log("onPress")
+        const {navigate} = this.props.navigation;
+
+        if(this.checkUserValid())
+            navigate('MainPage');
+        else
+            toast(`Check your ID and Password`);
     }
+
+    checkUserValid(){
+        const user_info = {ID:'cmj9597@naver.com', PW:'test1234'};
+        
+        Object.keys(this.state.forms).map((property)=>{
+            if(this.state.forms[property] !== user_info[property]){
+                return -1; 
+            }
+        });
+
+        return 1;
+    }  
 
     //user_setMethod
     setFormsData(property, data){
@@ -83,9 +102,8 @@ class LoginPage extends React.Component{
     }
 
     renderButton(){
-        const {navigate} = this.props.navigation;
         return(
-            <TouchableOpacity onPress={() => navigate('MainPage')}>
+            <TouchableOpacity onPress={this.pressLoginButton}>
                 <Text style={[styles.form, styles.button]}></Text>
             </TouchableOpacity>
         )
