@@ -54,6 +54,7 @@ class ItemList extends React.PureComponent {
                     else{
                         //처음 분실이 detecting 됐을 때
                         if(this.state.ownList[index].lost_state == 0){
+                            console.log("디바이스 분실");
                             this.state.ownList[index].lost_state = 1;
                             const {id, name, lost_state, lost_location} = this.state.ownList[index];
                             
@@ -66,7 +67,10 @@ class ItemList extends React.PureComponent {
                                         this.props.forceUpdate(); // Map Component Force update
                                     });
                                 }, 
-                                (error) => console.log(new Date(), error), 
+                                (error) => {
+                                    console.log(new Date(), error)
+                                    toast(`GPS Module failure. Check your module!`);
+                                }, 
                                 {
                                     enableHighAccuracy: false,
                                 }
@@ -329,12 +333,13 @@ class ItemList extends React.PureComponent {
 
         //소유한 기기일 때 style
         if(item.own_state)
-            colors = ['#E1F5FE', '#4FC3F7'];
+            colors = ['#d20744', '#e63c2c'];
         else
             colors = ['#fff', '#fff'];
         
-        if(item.lost_state)
-            itemStyle.push(styles.lostItemWrapper);
+        if(item.lost_state){
+            colors = ['#ff0000', '#ff0000'];
+        }
         
 
         return(
