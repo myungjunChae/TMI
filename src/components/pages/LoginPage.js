@@ -10,8 +10,6 @@ import LinearGradient from 'react-native-linear-gradient';
 
 //User Module
 import { toast } from '../../function/common';
-import { ThemeConsumer } from 'react-native-elements';
-
 
 class LoginPage extends React.Component{
     static navigationOptions = {
@@ -39,8 +37,6 @@ class LoginPage extends React.Component{
         const {navigate} = this.props.navigation;
 
         this.checkUserValid();
-
-        navigate('MainPage');
 
         if(this.state.valid.ID && this.state.valid.PW)
             navigate('MainPage');
