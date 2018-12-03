@@ -9,10 +9,10 @@ import { clone, toast, vibrationOn, vibrationOff } from '../../function/common';
 import { SampleConsumer } from '../../context';
 import confidential from '../../../confidential.json'
 
-let deviceInfoTemplate = {id: '', name: '', lost_state: 0, lost_location: '', timer: -1, own_state: 0, alert_state: 1}
+let deviceInfoTemplate = {id: '', name: '', lost_state: 0, lost_location: '', timer: -1, own_state: 0, alert_state: 1, color: -1}
 const timer = 15;
-//const vibrate_pattern = [100, 500, 100, 500, 100, 500, 100, 500, 100, 500, 100, 500]
-const vibrate_pattern = [100];
+const vibrate_pattern = [100, 500, 100, 500, 100, 500, 100, 500, 100, 500, 100, 500]
+// const vibrate_pattern = [100];
 
 class ItemList extends React.PureComponent {
     constructor(props) {
@@ -121,6 +121,7 @@ class ItemList extends React.PureComponent {
                     deviceInfo.timer = timer;
                     deviceInfo.own_state = 1;
                     deviceInfo.alert_state = 1;
+                    deviceInfo.color = -1;
         
                     this.state.ownList.push(deviceInfo);
                 }
@@ -179,11 +180,11 @@ class ItemList extends React.PureComponent {
     //Modal onoff
     _toggleModal = () => {
         this.setState({ isModalVisible: !this.state.isModalVisible });
-        this.setState({ isModalRendered: false });
     }
 
     //Device Click => Modal on
     pressDevice = (device) => {
+        console.log('pressDeivce');
         this.setState({clickedDevice: device});
         this._toggleModal();
     }
@@ -237,6 +238,7 @@ class ItemList extends React.PureComponent {
                 for(let index in this.state.ownList){
                     if(this.state.ownList[index].id === id){
                         //Rendering Style 변경
+                        this.state.color = -1;
                         this.state.ownList.splice(index,1);
                         this.forceUpdate();
                         toast(`unpairing ${id}`);
@@ -329,14 +331,27 @@ class ItemList extends React.PureComponent {
     /* About Render */
     renderList(item){
         let itemStyle = [styles.itemWrapper];
+        let colorPalette = {
+            color1: ['#ffafbd', '#ffc3a0'],
+            color2: ['#2193b0', '#6dd5ed'],
+            color3: ['#cc2b5e', '#753a88'],
+            color4: ['#ee9ca7', '#ffdde1'],
+        };
         let colors = [];
 
         //소유한 기기일 때 style
-        if(item.own_state)
-            colors = ['#d20744', '#e63c2c'];
-        else
+        if(item.own_state){
+            if(item.color === -1){
+                let random = Math.floor(Math.random() * Object.keys(colorPalette).length);
+                colors = colorPalette[`${Object.keys(colorPalette)[random]}`]; 
+                item.color = random;
+            }else{
+                colors = colorPalette[`${Object.keys(colorPalette)[item.color]}`]; 
+            }
+        }
+        else{
             colors = ['#fff', '#fff'];
-        
+        }
         if(item.lost_state){
             colors = ['#ff0000', '#ff0000'];
         }
@@ -344,10 +359,9 @@ class ItemList extends React.PureComponent {
 
         return(
             <LinearGradient start={{x: 0, y: 0}} end={{x: 1, y: 0}} colors={colors} style={styles.itemWrapper}>
-                <TouchableOpacity onPress={this.pressDevice.bind(this, item)}>
+                <TouchableOpacity style={{flex:1, justifyContent:'center', alignItems:'center'}} onPress={this.pressDevice.bind(this, item)}>
+                    <Text style={{fontSize:25, fontWeight:'bold'}}>{item.name}</Text>
                     <Text>{item.id}</Text>
-                    <Text>{item.name}</Text>
-                    <Text>{item.state}</Text>
                 </TouchableOpacity>
             </LinearGradient>
         )
@@ -355,16 +369,24 @@ class ItemList extends React.PureComponent {
 
     renderModal() {
         return(
-            <Modal isVisible={this.state.isModalVisible} animationInTiming={100}>
+            <Modal isVisible={true} animationInTiming={100}>
                 <View style={{flex:1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
                     <View style={{flex:0, flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width:250, height:100, elevation: 3, backgroundColor: color1}}>
                         {
                             //To-do : Render 수정
-                            this.state.clickedDevice !== null ? // 선택된 디바이스가 있을 때
-                            (this.state.clickedDevice.lost_state ? //선택된 디바이스가 
-                            (this.state.clickedDevice.alert_state ? this.renderStopVibrate() : this.renderUnpairing()): //분실됐을 경우
-                            (this.state.clickedDevice.own_state ? this.renderUnpairing() : this.renderPairing())) //분실되지않았을 경우
-                            :{}
+                            // 선택된 디바이스가 있을 때
+                            this.state.clickedDevice !== null 
+                                // 만약 그 디바이스를
+                                ? (this.state.clickedDevice.lost_state
+                                    // 잃어버렸을 경우
+                                    ? (this.state.clickedDevice.alert_state 
+                                        ? this.renderStopVibrate() 
+                                        : this.renderUnpairing())
+                                    // 잃어버리지 않았을 경우
+                                    : (this.state.clickedDevice.own_state 
+                                        ? this.renderUnpairing() 
+                                        : this.renderPairing()))
+                                : {}
                         }
                     </View>
                 </View>
@@ -374,62 +396,47 @@ class ItemList extends React.PureComponent {
 
     renderStopVibrate() {
         console.log('renderStopVibrate');
-        if(this.state.isModalRendered === false){
-            this.state.isModalRendered = true;
             return(
                 <View>
-                    <Text>아직 찾지 못한 Device입니다. 진동을 멈추시겠습니까?</Text>
+                    <Text>          진동을 멈추시겠습니까?</Text>
                     <View style={{flex:0, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', width:200}}>
                         <TouchableOpacity onPress={this.stopVibrate}><Text>Yes</Text></TouchableOpacity>
                         <TouchableOpacity onPress={this._toggleModal}><Text>No</Text></TouchableOpacity>
                     </View>
                 </View>
             );    
-        }else{
-            return;
-        }
     }
 
     renderPairing() {
         console.log('renderPairing');
-        if(this.state.isModalRendered === false){
-            this.state.isModalRendered = true;
-            return(
-                <View>
-                    <Text>이 디바이스를 페어링하시겠습니까?</Text>
-                    <View style={{flex:0, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', width:200}}>
-                        <TouchableOpacity onPress={this.pairDevice}><Text>Yes</Text></TouchableOpacity>
-                        <TouchableOpacity onPress={this._toggleModal}><Text>No</Text></TouchableOpacity>
-                    </View>
+        return(
+            <View>
+                <Text>이 디바이스를 페어링하시겠습니까?</Text>
+                <View style={{flex:0, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', width:200}}>
+                    <TouchableOpacity onPress={this.pairDevice}><Text>Yes</Text></TouchableOpacity>
+                    <TouchableOpacity onPress={this._toggleModal}><Text>No</Text></TouchableOpacity>
                 </View>
-            );
-        }else{
-            return;
-        }
+            </View>
+        );
     }
  
     renderUnpairing() {
         console.log('renderUnpairing');
-        if(this.state.isModalRendered === false){
-            this.state.isModalRendered = true;
-            return(
-                <View>
-                    <Text>이 디바이스와 페어링를 끊으시겠습니까?</Text>
-                    <View style={{flex:0, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', width:200}}>
-                        <TouchableOpacity onPress={this.unpairDevice}><Text>Yes</Text></TouchableOpacity>
-                        <TouchableOpacity onPress={this._toggleModal}><Text>No</Text></TouchableOpacity>
-                    </View>
+        return(
+            <View>
+                <Text>이 디바이스와 페어링를 끊으시겠습니까?</Text>
+                <View style={{flex:0, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', width:200}}>
+                    <TouchableOpacity onPress={this.unpairDevice}><Text>Yes</Text></TouchableOpacity>
+                    <TouchableOpacity onPress={this._toggleModal}><Text>No</Text></TouchableOpacity>
                 </View>
-            );
-        }else{
-            return;
-        }
+            </View>
+        );
     }
 
     render() {
         return (
             <View style={styles.listStyle}>
-                {this.renderModal()}
+                {this.state.isModalVisible && this.renderModal()}
                 <Text style={styles.mainText}>디바이스</Text>
                 <FlatList 
                     data={[...this.state.ownList, ...this.state.detectList]}

@@ -3,7 +3,8 @@ import {
     StyleSheet, 
     Text, View, Button, 
     FlatList, TouchableNativeFeedback,
-    PermissionsAndroid } from 'react-native';
+    PermissionsAndroid,
+    Dimensions } from 'react-native';
 import styled from 'styled-components';
 
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps'; 
@@ -153,10 +154,12 @@ const MapContainer = () => {
     );
 }
 
+const window = Dimensions.get('window');
+
 const styles = StyleSheet.create({
     container: {
       ...StyleSheet.absoluteFillObject,
-      height: 400,
+      height: window.height,
       width: 400,
       justifyContent: 'flex-end',
       alignItems: 'center',

@@ -10,8 +10,6 @@ import LinearGradient from 'react-native-linear-gradient';
 
 //User Module
 import { toast } from '../../function/common';
-import { ThemeConsumer } from 'react-native-elements';
-
 
 class LoginPage extends React.Component{
     static navigationOptions = {
