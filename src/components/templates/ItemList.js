@@ -9,7 +9,7 @@ import { clone, toast, vibrationOn, vibrationOff } from '../../function/common';
 import { SampleConsumer } from '../../context';
 import confidential from '../../../confidential.json'
 
-let deviceInfoTemplate = {id: '', name: '', lost_state: 0, lost_location: '', timer: -1, own_state: 0, alert_state: 1}
+let deviceInfoTemplate = {id: '', name: '', lost_state: 0, lost_location: '', timer: -1, own_state: 0, alert_state: 1, color: -1}
 const timer = 15;
 //const vibrate_pattern = [100, 500, 100, 500, 100, 500, 100, 500, 100, 500, 100, 500]
 const vibrate_pattern = [100];
@@ -121,6 +121,7 @@ class ItemList extends React.PureComponent {
                     deviceInfo.timer = timer;
                     deviceInfo.own_state = 1;
                     deviceInfo.alert_state = 1;
+                    deviceInfo.color = -1;
         
                     this.state.ownList.push(deviceInfo);
                 }
@@ -237,6 +238,7 @@ class ItemList extends React.PureComponent {
                 for(let index in this.state.ownList){
                     if(this.state.ownList[index].id === id){
                         //Rendering Style 변경
+                        this.state.color = -1;
                         this.state.ownList.splice(index,1);
                         this.forceUpdate();
                         toast(`unpairing ${id}`);
@@ -329,14 +331,27 @@ class ItemList extends React.PureComponent {
     /* About Render */
     renderList(item){
         let itemStyle = [styles.itemWrapper];
+        let colorPalette = {
+            color1: ['#ffafbd', '#ffc3a0'],
+            color2: ['#2193b0', '#6dd5ed'],
+            color3: ['#cc2b5e', '#753a88'],
+            color4: ['#ee9ca7', '#ffdde1'],
+        };
         let colors = [];
 
         //소유한 기기일 때 style
-        if(item.own_state)
-            colors = ['#d20744', '#e63c2c'];
-        else
+        if(item.own_state){
+            if(item.color === -1){
+                let random = Math.floor(Math.random() * Object.keys(colorPalette).length);
+                colors = colorPalette[`${Object.keys(colorPalette)[random]}`]; 
+                item.color = random;
+            }else{
+                colors = colorPalette[`${Object.keys(colorPalette)[item.color]}`]; 
+            }
+        }
+        else{
             colors = ['#fff', '#fff'];
-        
+        }
         if(item.lost_state){
             colors = ['#ff0000', '#ff0000'];
         }
@@ -349,10 +364,10 @@ class ItemList extends React.PureComponent {
                     <Text>{item.name}</Text>
                     <Text>{item.state}</Text>
                 </TouchableOpacity>*/}
-                <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+                <TouchableOpacity style={{flex:1, justifyContent:'center', alignItems:'center'}} onPress={this.pressDevice.bind(this, item)}>
                     <Text style={{fontSize:25, fontWeight:'bold'}}>{item.name}</Text>
                     <Text>{item.id}</Text>
-                </View>
+                </TouchableOpacity>
             </LinearGradient>
         )
     }
